@@ -9,7 +9,7 @@ pbr
 pip==1.5.6		# MIT // AN-4322
 pymongo
 python-dateutil
-python-gnupg==0.3.6
+python-gnupg==0.4.4
 pyyaml
 psutil
 
