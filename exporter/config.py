@@ -86,7 +86,7 @@ def update_environments(config):
     tokens = {}
     auth_filename = values.get('auth_file')
     if auth_filename:
-        auth_filename = auth_filename.format(WORKSPACE=os.environ['WORKSPACE'])
+        # auth_filename = auth_filename.format(WORKSPACE=os.environ['WORKSPACE'])
         if os.path.exists(auth_filename):
             with open(auth_filename) as auth_file:
                 tokens.update(json.load(auth_file))
@@ -151,7 +151,7 @@ def get_config_for_org(config, organization):
 
 def get_config_for_course(config, course):
     # config['values'] are overridden default values with program options, every other key is from the config file.
-    course_config = merge(config['values'], {'tasks': config['tasks']})
+    course_config = merge(config['values'], {'tasks': config['values']['tasks']})
     course_config['course'] = course
     course_config['environments'] = config['environments']
     return course_config
