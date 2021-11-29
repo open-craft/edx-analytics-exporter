@@ -123,13 +123,12 @@ def upload_files(config, results_directory):
         log.info('Uploading file %s to %s', filepath, target)
 
         s3 = boto3.resource('s3')
-        s3.meta.client.upload_file(filepath, 'bucket}/{prefix}{course}/state/{date}'.format(
-            bucket=bucket,
+        s3.meta.client.upload_file(filepath, bucket, '{prefix}{course}/state/{date}/{name}'.format(
             prefix=prefix,
             course=filename_safe_course_id,
             date=output_date,
             name=filename
-        ), filename)
+        ))
 
         # cmd = 'aws s3 cp --acl bucket-owner-full-control {filepath} {target}'
         # cmd = cmd.format(filepath=filepath, target=target)
