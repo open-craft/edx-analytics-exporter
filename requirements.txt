@@ -1,5 +1,6 @@
 # Application
-awscli
+# awscli
+boto3==1.4.8
 docopt
 edx-ccx-keys==1.1.0 # Pinned for python 2.7 compatibility
 edx-opaque-keys==2.1.1 # Pinned for python 2.7 compatibility

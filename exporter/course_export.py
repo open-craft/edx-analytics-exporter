@@ -42,6 +42,7 @@ import subprocess
 import logging
 import logging.config
 import re
+import boto3
 
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys import InvalidKeyError
@@ -121,13 +122,22 @@ def upload_files(config, results_directory):
 
         log.info('Uploading file %s to %s', filepath, target)
 
-        cmd = 'aws s3 cp --acl bucket-owner-full-control {filepath} {target}'
-        cmd = cmd.format(filepath=filepath, target=target)
+        s3 = boto3.resource('s3')
+        s3.meta.client.upload_file(filepath, 'bucket}/{prefix}{course}/state/{date}'.format(
+            bucket=bucket,
+            prefix=prefix,
+            course=filename_safe_course_id,
+            date=output_date,
+            name=filename
+        ), filename)
 
-        if not config['dry_run']:
-            subprocess.check_call(cmd, shell=True)
-        else:
-            log.info('cmd: %s', cmd)
+        # cmd = 'aws s3 cp --acl bucket-owner-full-control {filepath} {target}'
+        # cmd = cmd.format(filepath=filepath, target=target)
+
+        # if not config['dry_run']:
+        #     subprocess.check_call(cmd, shell=True)
+        # else:
+        #     log.info('cmd: %s', cmd)
 
 @contextmanager
 def make_course_directory(config, course):
