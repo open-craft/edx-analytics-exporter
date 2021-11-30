@@ -253,9 +253,6 @@ class CopyS3FileTask(Task):
     def run(cls, filename, dry_run, **kwargs):
         super(CopyS3FileTask, cls).run(filename, dry_run, **kwargs)
 
-        if not distutils.spawn.find_executable("aws"):
-            raise FatalTaskError("The {0} task requires the awscli".format(cls.__name__))
-
         file_basename = os.path.basename(filename)
         s3_source_filename = '{prefix}/{env}/{filename}'.format(
             prefix=kwargs['external_prefix'],
