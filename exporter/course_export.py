@@ -65,7 +65,7 @@ def main():
 
         with make_course_directory(config, course) as temp_directory:
             results = export_course_data(config, temp_directory, courses_with_env[course])
-            upload_files(config, temp_directory)
+            upload_files_or_dir(config, temp_directory)
 
 def get_courses_with_env(config):
     courses_with_env = {}
@@ -103,16 +103,31 @@ def export_course_data(config, destination, environment):
 
     return results
 
-def upload_files(config, results_directory):
+def upload_files_or_dir(config, results_directory, sub_directory=None):
+
+    if sub_directory:
+        parent_directory = os.path.join(results_directory, sub_directory)
+    else:
+        parent_directory = results_directory
+
+    for filename in os.listdir(parent_directory):
+        filepath = os.path.join(parent_directory, filename)
+
+        if(os.path.isdir(filepath)):
+            upload_files_or_dir(config, results_directory, filename)
+        else:
+            if sub_directory:
+                filename = os.path.join(sub_directory, filename)
+            upload_file(config, filepath, filename)
+
+
+def upload_file(config, filepath, filename):
     bucket = config['output_bucket']
     prefix = config['output_prefix'] or ''
     filename_safe_course_id = get_filename_safe_course_id(config['course'])
     output_date = str(datetime.date.today())
 
-    for filename in os.listdir(results_directory):
-        filepath = os.path.join(results_directory, filename)
-
-        target = 's3://{bucket}/{prefix}{course}/state/{date}/{name}'.format(
+    target = 's3://{bucket}/{prefix}{course}/state/{date}/{name}'.format(
             bucket=bucket,
             prefix=prefix,
             course=filename_safe_course_id,
@@ -120,23 +135,15 @@ def upload_files(config, results_directory):
             name=filename
         )
 
-        log.info('Uploading file %s to %s', filepath, target)
+    log.info('Uploading file %s to %s', filepath, target)
+    s3 = boto3.resource('s3')
+    s3.meta.client.upload_file(filepath, bucket, '{prefix}{course}/state/{date}/{name}'.format(
+        prefix=prefix,
+        course=filename_safe_course_id,
+        date=output_date,
+        name=filename
+    ))
 
-        s3 = boto3.resource('s3')
-        s3.meta.client.upload_file(filepath, bucket, '{prefix}{course}/state/{date}/{name}'.format(
-            prefix=prefix,
-            course=filename_safe_course_id,
-            date=output_date,
-            name=filename
-        ))
-
-        # cmd = 'aws s3 cp --acl bucket-owner-full-control {filepath} {target}'
-        # cmd = cmd.format(filepath=filepath, target=target)
-
-        # if not config['dry_run']:
-        #     subprocess.check_call(cmd, shell=True)
-        # else:
-        #     log.info('cmd: %s', cmd)
 
 @contextmanager
 def make_course_directory(config, course):
