@@ -42,6 +42,7 @@ import subprocess
 import logging
 import logging.config
 import re
+
 import boto3
 
 from opaque_keys.edx.keys import CourseKey
@@ -136,8 +137,8 @@ def upload_file(config, filepath, filename):
         )
 
     log.info('Uploading file %s to %s', filepath, target)
-    s3 = boto3.resource('s3')
-    s3.meta.client.upload_file(filepath, bucket, '{prefix}{course}/state/{date}/{name}'.format(
+    s3_client = boto3.client('s3')
+    s3_client.upload_file(filepath, bucket, '{prefix}{course}/state/{date}/{name}'.format(
         prefix=prefix,
         course=filename_safe_course_id,
         date=output_date,
