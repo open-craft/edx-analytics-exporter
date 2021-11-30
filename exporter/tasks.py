@@ -173,13 +173,13 @@ class MongoTask(Task):
     EXT = 'mongo'
     CMD = """
     mongoexport
-      --host {mongo_host}
-      --db {mongo_db}
-      --username {mongo_user}
-      --collection {mongo_collection}
-      --query '{query}'
-      --slaveOk
-      --out {filename}
+      --host={mongo_host}
+      --db={mongo_db}
+      --username={mongo_user}
+      --password={mongo_password}
+      --collection={mongo_collection}
+      --query='{query}'
+      --out={filename}
       >&2
     """
 
@@ -197,9 +197,7 @@ class MongoTask(Task):
         if dry_run:
             print('MONGO: {0}'.format(query))
         else:
-            # For some reason, if mongoexport receives EOF before a newline, it panics.  So we need to add it manually:
-            stdin_string = kwargs['mongo_password'] + "\n"
-            execute_shell(cmd, stdin_string=stdin_string, **kwargs)
+            execute_shell(cmd, **kwargs)
 
 
 class DjangoAdminTask(Task):
