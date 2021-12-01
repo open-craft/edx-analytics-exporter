@@ -185,7 +185,7 @@ class MongoTask(Task):
         if kwargs.get("mongo_user").strip() and kwargs.get("mongo_password").strip():
             uri = f"{uri}{kwargs.get('mongo_user').strip()}:{kwargs.get('mongo_password').strip()}@"
 
-        return f"{uri}{kwargs.get('mongo_host')}"
+        return f"{uri}{kwargs.get('mongo_host')}/{kwargs.get('mongo_db')}?authSource=admin"
 
 
     @classmethod
