@@ -199,6 +199,7 @@ class MongoTask(Task):
         log.debug(query)
 
         if dry_run:
+            print(f'Mongo URI {mongo_uri}')
             print('MONGO: {0}'.format(query))
         else:
             collection = MongoClient(mongo_uri)[kwargs.get("mongo_db")][kwargs.get("mongo_collection")]
