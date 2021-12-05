@@ -24,7 +24,7 @@ import json
 import subprocess
 import sys
 
-from edx_exporter.config import setup, get_config_for_org
+from exporter.config import setup, get_config_for_org
 
 
 log = logging.getLogger(__name__)

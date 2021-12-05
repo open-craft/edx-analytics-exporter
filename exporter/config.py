@@ -9,7 +9,7 @@ import tempfile
 from docopt import docopt
 import yaml
 
-from edx_exporter.util import merge, filter_keys
+from exporter.util import merge, filter_keys
 
 
 WORK_SUBDIR = 'course-data'

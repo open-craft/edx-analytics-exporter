@@ -35,7 +35,7 @@ from fnmatch import fnmatch
 
 from docopt import docopt
 
-from edx_exporter.config import setup, get_config_for_org
+from exporter.config import setup, get_config_for_org
 
 
 def main():

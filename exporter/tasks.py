@@ -15,9 +15,9 @@ from pymongo import MongoClient
 
 from opaque_keys.edx.keys import CourseKey
 
-from edx_exporter.config import setup_logging
-from edx_exporter.mysql_query import MysqlDumpQueryToTSV
-from edx_exporter.util import NotSet, execute_shell
+from exporter.config import setup_logging
+from exporter.mysql_query import MysqlDumpQueryToTSV
+from exporter.util import NotSet, execute_shell
 
 
 setup_logging()

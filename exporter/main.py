@@ -53,15 +53,15 @@ import gnupg
 
 from opaque_keys.edx.keys import CourseKey
 
-from edx_exporter.config import setup, get_config_for_org, get_config_for_env
-from edx_exporter.tasks import OrgTask, CourseTask
-from edx_exporter.tasks import FindAllCoursesTask
-from edx_exporter.tasks import FatalTaskError
-from edx_exporter.tasks import DEFAULT_TASKS
-from edx_exporter.tasks import OrgEmailOptInTask
-from edx_exporter.util import make_temp_directory, with_temp_directory
-from edx_exporter.util import filter_keys, memoize, execute_shell
-from edx_exporter.util import logging_streams_on_failure
+from exporter.config import setup, get_config_for_org, get_config_for_env
+from exporter.tasks import OrgTask, CourseTask
+from exporter.tasks import FindAllCoursesTask
+from exporter.tasks import FatalTaskError
+from exporter.tasks import DEFAULT_TASKS
+from exporter.tasks import OrgEmailOptInTask
+from exporter.util import make_temp_directory, with_temp_directory
+from exporter.util import filter_keys, memoize, execute_shell
+from exporter.util import logging_streams_on_failure
 
 
 log = logging.getLogger(__name__)
