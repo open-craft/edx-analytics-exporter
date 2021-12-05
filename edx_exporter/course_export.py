@@ -48,10 +48,10 @@ import boto3
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys import InvalidKeyError
 
-from exporter.tasks import CourseTask, FatalTaskError
-from exporter.main import run_tasks, archive_directory, upload_data, get_all_courses, _get_selected_tasks
-from exporter.config import setup, get_config_for_env, get_config_for_course
-from exporter.util import make_temp_directory, with_temp_directory, merge
+from edx_exporter.tasks import CourseTask, FatalTaskError
+from edx_exporter.main import run_tasks, archive_directory, upload_data, get_all_courses, _get_selected_tasks
+from edx_exporter.config import setup, get_config_for_env, get_config_for_course
+from edx_exporter.util import make_temp_directory, with_temp_directory, merge
 
 log = logging.getLogger(__name__)
 

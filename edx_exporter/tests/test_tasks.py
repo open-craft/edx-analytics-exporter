@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 
-from exporter import tasks
+from edx_exporter import tasks
 
 import mock
 

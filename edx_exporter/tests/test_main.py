@@ -1,6 +1,6 @@
 import mock
 
-from exporter import main, tasks
+from edx_exporter import main, tasks
 
 
 class TestTask(tasks.OrgTask, tasks.Task):
