@@ -38,10 +38,10 @@ Options:
 from contextlib import contextmanager
 import datetime
 import os
-import subprocess
 import logging
 import logging.config
 import re
+import shutil
 
 import boto3
 
@@ -66,7 +66,8 @@ def main():
 
         with make_course_directory(config, course) as temp_directory:
             results = export_course_data(config, temp_directory, courses_with_env[course])
-            upload_files_or_dir(config, temp_directory)
+            root_dir = archive_directory(temp_directory)
+            upload_files_or_dir(config, root_dir)
 
 def get_courses_with_env(config):
     courses_with_env = {}
@@ -86,6 +87,17 @@ def get_courses_with_env(config):
         raise FatalTaskError("Failed to find courses in configured environments.")
 
     return courses_with_env
+
+
+def archive_directory(directory):
+    root_dir = os.path.dirname(directory)
+    base_dir = os.path.basename(directory)
+
+    shutil.make_archive(directory, 'zip', root_dir, base_dir)
+    shutil.rmtree(directory)
+
+    return root_dir
+
 
 def export_course_data(config, destination, environment):
     log.info('Exporting data for %s', config['course'])
@@ -138,7 +150,7 @@ def upload_file(config, filepath, filename):
 
     log.info('Uploading file %s to %s', filepath, target)
     s3_client = boto3.client('s3')
-    s3_client.upload_file(filepath, bucket, '{prefix}{course}/state/{date}/{name}'.format(
+    s3_client.upload_file(filepath, bucket, '{prefix}_{course}/{date}/{name}'.format(
         prefix=prefix,
         course=filename_safe_course_id,
         date=output_date,
