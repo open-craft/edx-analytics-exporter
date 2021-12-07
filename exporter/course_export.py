@@ -4,10 +4,7 @@
 Export course data.
 
 Usage:
-  course-exporter [options] [--task=<task>...]
-
-Arguments:
-  --task=<task>             Select task. Can be specified multiple times.
+  course-exporter [options]
 
 Options:
   -h --help                  Show this screen.
