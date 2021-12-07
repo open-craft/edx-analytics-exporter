@@ -143,22 +143,18 @@ def upload_file(config, filepath, filename):
     filename_safe_course_id = get_filename_safe_course_id(config['course'])
     output_date = str(datetime.date.today())
 
-    target = 's3://{bucket}/{prefix}{course}/state/{date}/{name}'.format(
-            bucket=bucket,
-            prefix=prefix,
-            course=filename_safe_course_id,
-            date=output_date,
-            name=filename
-        )
-
-    log.info('Uploading file %s to %s', filepath, target)
-    s3_client = boto3.client('s3')
-    s3_client.upload_file(filepath, bucket, '{prefix}_{course}/{date}/{name}'.format(
+    s3_target = '{prefix}_{course}/{date}/{name}'.format(
         prefix=prefix,
         course=filename_safe_course_id,
         date=output_date,
         name=filename
-    ))
+    )
+
+    target = f's3://{s3_target}'
+
+    log.info('Uploading file %s to %s', filepath, target)
+    s3_client = boto3.client('s3')
+    s3_client.upload_file(filepath, bucket, s3_target)
 
 
 @contextmanager
