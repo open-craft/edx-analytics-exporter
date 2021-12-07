@@ -19,6 +19,7 @@ Options:
 
   --external-prefix=<pfx>    Prefix relative paths to external files with this string.
   --pipeline-bucket=<pb>     Bucket that the EMR pipeline drops files in.
+  --environment=<name>       The enviornment name for which this is being run, ex. prod, stage
   --se-bucket=<bucket>       The S3 bucket to retrieve StackExchange data from.
 
 
@@ -63,7 +64,7 @@ from opaque_keys import InvalidKeyError
 from exporter.tasks import CourseTask, FatalTaskError
 from exporter.main import run_tasks, archive_directory, get_all_courses, _get_selected_tasks
 from exporter.config import setup, get_config_for_course
-from exporter.util import make_temp_directory
+from exporter.util import make_temp_directory, merge
 
 log = logging.getLogger(__name__)
 
@@ -83,7 +84,7 @@ def main():
 
 def get_courses(config):
 
-    kwargs = config['values']
+    kwargs = merge(config['values'], {})
     all_courses  = get_all_courses(**kwargs)
 
     return all_courses
@@ -104,7 +105,7 @@ def export_course_data(config, destination):
 
     results = []
 
-    kwargs = config
+    kwargs = merge(config, {})
     kwargs['work_dir'] = destination
 
     log.info("Getting data for course %s", config['course'])

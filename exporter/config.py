@@ -84,7 +84,7 @@ def get_config_for_org(config, organization):
 
 def get_config_for_course(config, course):
     # config['values'] are overridden default values with program options, every other key is from the config file.
-    course_config = merge(config['values'], {'tasks': config['values']['tasks']})
+    course_config = merge(config['values'], {})
     course_config['course'] = course
     return course_config
 

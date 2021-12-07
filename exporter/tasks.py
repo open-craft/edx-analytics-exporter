@@ -64,11 +64,12 @@ class FilenameMixin(object):
 
     @classmethod
     def get_filename_template(cls, kwargs):
-        template = "{entity}-{task}.{extension}"
+        template = "{entity}-{task}-{name}.{extension}"
 
         return template.format(
             entity=cls.entity_name(kwargs),
             task=cls.NAME,
+            name=kwargs['environment'],
             extension=cls.EXT
         )
 
@@ -181,7 +182,7 @@ class MongoTask(Task):
 
         uri = "mongodb://"
         
-        if kwargs.get("mongo_user").strip() and kwargs.get("mongo_password").strip():
+        if kwargs.get("mongo_user") and kwargs.get("mongo_password"):
             uri = f"{uri}{kwargs.get('mongo_user').strip()}:{kwargs.get('mongo_password').strip()}@"
 
         return f"{uri}{kwargs.get('mongo_host')}/{kwargs.get('mongo_db')}"
@@ -1002,7 +1003,7 @@ class OrgEmailOptInTask(OrgTask, DjangoAdminTask):
 
 DEFAULT_TASKS = [
     UserIDMapTask,
-    StudentModuleTask,
+    # StudentModuleTask,
     TeamsTask,
     TeamsMembershipTask,
     CourseEnrollmentTask,
@@ -1034,15 +1035,15 @@ DEFAULT_TASKS = [
     AssessmentAssessmentFeedbackOptionsTask,
     AssessmentAssessmentFeedbackOptionTask,
     AssessmentAssessmentPartTask,
-    AssessmentCriterionTask,
-    AssessmentCriterionOptionTask,
+    # AssessmentCriterionTask,
+    # AssessmentCriterionOptionTask,
     AssessmentPeerWorkflowTask,
     AssessmentPeerWorkflowItemTask,
-    AssessmentRubricTask,
+    # AssessmentRubricTask,
     AssessmentStudentTrainingWorkflow,
     AssessmentStudentTrainingWorkflowItemTask,
-    AssessmentTrainingExampleTask,
-    AssessmentTrainingExampleOptionsSelectedTask,
+    # AssessmentTrainingExampleTask,
+    # AssessmentTrainingExampleOptionsSelectedTask,
     SubmissionsScoreTask,
     SubmissionsScoreSummaryTask,
     SubmissionsStudentItemTask,
