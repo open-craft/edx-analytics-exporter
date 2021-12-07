@@ -154,12 +154,12 @@ def upload_files_or_dir(config, results_directory, sub_directory=None):
 
 def upload_file(config, filepath, filename):
     bucket = config['output_bucket']
-    prefix = config['output_prefix'] or ''
+    
     organization = config['organization']
     output_date = str(datetime.date.today())
 
     s3_target = '{prefix}_{org}/{date}/{name}'.format(
-        prefix=prefix,
+        prefix=organization,
         org=organization,
         date=output_date,
         name=filename

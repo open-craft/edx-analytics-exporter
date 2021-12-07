@@ -28,7 +28,25 @@ def _get_config(program_options):
     
     update_config(config, program_options)
 
+    set_config_defaults(config)
+
     return config
+
+
+def set_config_defaults(config):
+    values = config['values']
+
+    if not values.get('lms_config'):
+        values['lms_config'] = '/edx/etc/lms.yml'
+
+    if not values.get('studio_config'):
+        values['studio_config'] = '/edx/etc/studio.yml'
+
+    if not values.get('django_admin'):
+        values['django_admin'] = 'django-admin'
+
+    if not values.get('django_pythonpath'):
+        values['django_pythonpath'] = '/edx/app/edxapp/edx-platform'
 
 
 def update_config(config, program_options):
