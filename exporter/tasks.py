@@ -294,7 +294,7 @@ class CopyS3FileTask(Task):
                     error_message = f"Unable to find success marker for export {s3_marker_filename}"
                 else:
                     error_message = f'Got {error_code} error while checking marker file'
-                raise FatalTaskError(error_message)
+                raise Exception(error_message)
 
             try:
                 log.info(f"Checking if source file {s3_source_filename} exsists")
@@ -305,13 +305,13 @@ class CopyS3FileTask(Task):
                     error_message = f"Unable to find success source for export {s3_source_filename}"
                 else:
                     error_message = f'Got {error_code} error while checking source file'
-                raise FatalTaskError(error_message)
+                raise Exception(error_message)
 
             try:
                 log.info(f"Downloading source file {s3_source_filename} into {filename}")
                 s3_client.download_file(kwargs['pipeline_bucket'], s3_source_filename, filename)
             except:
-                raise FatalTaskError(f"Unable to copy {s3_source_filename} to {filename}")
+                raise Exception(f"Unable to copy {s3_source_filename} to {filename}")
 
 
 class UserIDMapTask(CourseTask, SQLTask):
@@ -1003,7 +1003,7 @@ class OrgEmailOptInTask(OrgTask, DjangoAdminTask):
 
 DEFAULT_TASKS = [
     UserIDMapTask,
-    # StudentModuleTask,
+    StudentModuleTask,
     TeamsTask,
     TeamsMembershipTask,
     CourseEnrollmentTask,
