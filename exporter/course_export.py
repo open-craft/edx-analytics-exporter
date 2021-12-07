@@ -111,6 +111,9 @@ def archive_directory(directory):
     root_dir = os.path.dirname(directory)
     base_dir = os.path.basename(directory)
 
+    # Fix for error when running make_archive from crontab
+    os.chdir('/tmp')
+
     shutil.make_archive(directory, 'zip', root_dir, base_dir)
     shutil.rmtree(directory)
 
