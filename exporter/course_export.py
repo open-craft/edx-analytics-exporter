@@ -59,34 +59,22 @@ log = logging.getLogger(__name__)
 def main():
     general_config = setup(__doc__)
 
-    courses_with_env = get_courses_with_env(general_config)
+    courses = get_courses(general_config)
 
-    for course in general_config['values']['course']:
+    for course in courses:
         config = get_config_for_course(general_config, course)
 
         with make_course_directory(config, course) as temp_directory:
-            results = export_course_data(config, temp_directory, courses_with_env[course])
+            results = export_course_data(config, temp_directory)
             root_dir = archive_directory(temp_directory)
             upload_files_or_dir(config, root_dir)
 
-def get_courses_with_env(config):
-    courses_with_env = {}
-    courses = config['values']['course']
+def get_courses(config):
 
-    for environment in config['environments']:
-         kwargs = merge(config['values'], config['environments'][environment])
-         all_courses  = get_all_courses(**kwargs)
+    kwargs = config['values']
+    all_courses  = get_all_courses(**kwargs)
 
-         if all_courses:
-             found_courses = set(courses) & set(all_courses)
-             courses_with_env.update({course: environment for course in found_courses})
-             courses = set(courses) - found_courses
-
-    if courses:
-        log.error("Failed to find courses: %s", list(courses))
-        raise FatalTaskError("Failed to find courses in configured environments.")
-
-    return courses_with_env
+    return all_courses
 
 
 def archive_directory(directory):
@@ -99,12 +87,12 @@ def archive_directory(directory):
     return root_dir
 
 
-def export_course_data(config, destination, environment):
+def export_course_data(config, destination):
     log.info('Exporting data for %s', config['course'])
 
     results = []
 
-    kwargs = get_config_for_env(config, environment)
+    kwargs = config
     kwargs['work_dir'] = destination
 
     log.info("Getting data for course %s", config['course'])
