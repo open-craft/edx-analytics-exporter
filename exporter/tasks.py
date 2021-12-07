@@ -64,12 +64,11 @@ class FilenameMixin(object):
 
     @classmethod
     def get_filename_template(cls, kwargs):
-        template = "{entity}-{task}-{name}.{extension}"
+        template = "{entity}-{task}.{extension}"
 
         return template.format(
             entity=cls.entity_name(kwargs),
             task=cls.NAME,
-            name=kwargs['name'],
             extension=cls.EXT
         )
 
