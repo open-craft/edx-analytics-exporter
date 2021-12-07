@@ -24,16 +24,8 @@ def setup(doc, argv=None):
 
 
 def _get_config(program_options):
-    with open(program_options['<config>']) as f:
-        config = yaml.load(f)
-
-    if '<org-config>' in program_options:
-        # org-config is not passed in separately for all jobs and is not available to jobs that run as a "slave"
-        with open(program_options['<org-config>']) as f:
-            org_config = yaml.load(f)
-
-        config['organizations'] = org_config['organizations']
-
+    config = {}
+    
     update_config(config, program_options)
 
     return config
@@ -41,8 +33,6 @@ def _get_config(program_options):
 
 def update_config(config, program_options):
     merge_program_options(config, program_options)
-    update_values(config)
-    update_environments(config)
     # Config files may not always contain organization information.
     if 'organizations' in config:
         update_organizations(config)
@@ -55,60 +45,10 @@ def merge_program_options(config, program_options):
                in program_options.items()
                if k.startswith('--')}
 
-    config['options'] = options
+    if not options.get('work_dir'):
+        options['work_dir'] = tempfile.gettempdir()
 
-
-def update_values(config):
-    # override defaults values with program options
-    values = merge(config['options'], config['defaults'])
-
-    # set defaults if missing
-    if not values.get('work_dir'):
-        values['work_dir'] = tempfile.gettempdir()
-
-    config['values'] = values
-
-
-def update_environments(config):
-    values = config['values']
-
-    # select only the organizations requested
-    environments = filter_keys(config['environments'], values.get('env'))
-
-    # read authentication tokens
-    tokens = {}
-    auth_filename = values.get('auth_file')
-    if auth_filename:
-        # auth_filename = auth_filename.format(WORKSPACE=os.environ['WORKSPACE'])
-        if os.path.exists(auth_filename):
-            with open(auth_filename) as auth_file:
-                tokens.update(json.load(auth_file))
-
-    # update "known" environments with the values from the auth file.
-    # this would not be necessary if the configuration file had all the values
-
-    field_map = {
-        'sql_password': 'rds_pass',
-        'mongo_user': 'mongo_user',
-        'mongo_password': 'mongo_pass',
-        'secret_key': 'secret_key'
-    }
-
-    for env in ['prod', 'edge']:
-        if env in environments:
-            data = environments.get(env, {})
-            for config_name, token_name in field_map.items():
-                data[config_name] = tokens.get(token_name)
-
-            # different settings for edge
-            if env == 'edge':
-                data['sql_password'] = tokens.get('rds_pass_edge')
-                data['mongo_user'] = tokens.get('mongo_user_edge')
-                data['mongo_password'] = tokens.get('mongo_pass_edge')
-
-            environments[env] = data
-
-    config['environments'] = environments
+    config['values'] = options
 
 
 def update_organizations(config):
@@ -146,7 +86,6 @@ def get_config_for_course(config, course):
     # config['values'] are overridden default values with program options, every other key is from the config file.
     course_config = merge(config['values'], {'tasks': config['values']['tasks']})
     course_config['course'] = course
-    course_config['environments'] = config['environments']
     return course_config
 
 

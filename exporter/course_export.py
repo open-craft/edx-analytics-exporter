@@ -4,13 +4,10 @@
 Export course data.
 
 Usage:
-  course-exporter [options] <config> [--env=<environment>...] [--course=<course>...] [--task=<task>...]
+  course-exporter [options] [--task=<task>...]
 
 Arguments:
-  <config>                   YAML configuration file.
-  --env=<environment>        Select environment. Can be specified multiple times.
-  --task=<task>              Select task. Can be specified multiple times.
-  --course=<course>             Select course. Can be specified multiple times.
+  --task=<task>             Select task. Can be specified multiple times.
 
 Options:
   -h --help                  Show this screen.
@@ -30,8 +27,26 @@ Options:
 
   --auth-file=<file>         Authentication file with credentials.
 
-  --django-admin=<admin>     The path to the appropriate django-admin.py
-  --django-pythonpath=<path> The django python path
+  --django-admin=<admin>            The path to the appropriate django-admin.py
+  --django-pythonpath=<path>        The django python path
+  --django-settings=<settings>      The path to lms django settings file
+  --django-cms-settings=<settings>  The path to cms django settings file
+
+  --lms-config=<path>       The path to lms config yml file
+  --studio-config=<path>    The path to cms config yml file
+
+  --mongo-host=<host>               The mongo host to connect
+  --mongo-user=<username>           The mongo username to connect
+  --mongo-password=<password>       The mongo password to connect
+  --mongo-db=<db>                   The mongo db to query
+  --mongo-collection=<collection>   The mongo collection to query
+
+  --sql-host=<host>         The sql db host
+  --sql-user=<user>         The sql username for login to db
+  --sql-password=<password> The sql password for login to db
+  --sql-db=<db>             The sql db to query
+
+  --secret-key=<secert-key> The secret key to calculate user id hash
 """
 
 
@@ -49,9 +64,9 @@ from opaque_keys.edx.keys import CourseKey
 from opaque_keys import InvalidKeyError
 
 from exporter.tasks import CourseTask, FatalTaskError
-from exporter.main import run_tasks, archive_directory, upload_data, get_all_courses, _get_selected_tasks
-from exporter.config import setup, get_config_for_env, get_config_for_course
-from exporter.util import make_temp_directory, with_temp_directory, merge
+from exporter.main import run_tasks, archive_directory, get_all_courses, _get_selected_tasks
+from exporter.config import setup, get_config_for_course
+from exporter.util import make_temp_directory
 
 log = logging.getLogger(__name__)
 
