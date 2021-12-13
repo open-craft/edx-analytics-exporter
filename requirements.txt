@@ -1,31 +1,13 @@
-## Original Requirements
-# awscli
-# docopt
-# edx-ccx-keys==1.1.0 # Pinned for python 2.7 compatibility
-# edx-opaque-keys==2.1.1 # Pinned for python 2.7 compatibility
-# graphitesend==0.10.0 # Apache
-# path.py
-# pbr
-# pip==1.5.6		# MIT // AN-4322
-# pymongo
-# python-dateutil
-# python-gnupg==0.3.6
-# pyyaml
-# psutil
+# This script is intended to be run alongside the 
+# edx-platfrom application in the same virtual environment.
+# The requirements below are already installed as part of edx-platform.
+# Uncomment these requirements, if the script is to be
+# run in a different environment.
 
-# # Tests
-# coverage==4.3.4
-# mock==2.0.0
-# pytest==3.0.7
-# pytest-cov==2.4.0
-
-
-
-## Modified Requirements satisfied by edx-platform
 # boto3==1.4.8
 # docopt==0.6.2
-# edx-ccx-keys==1.2.0 # Pinned for python 2.7 compatibility
-# edx-opaque-keys==2.2.1 # Pinned for python 2.7 compatibility
+# edx-ccx-keys==1.2.0
+# edx-opaque-keys==2.2.1
 # path.py==12.5.0
 # pbr==5.5.1
 # pymongo==3.10.1
