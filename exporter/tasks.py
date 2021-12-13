@@ -179,7 +179,6 @@ class MongoTask(Task):
 
     @classmethod
     def constructMongoURI(*args, **kwargs):
-
         uri = "mongodb://"
         
         if kwargs.get("mongo_user") and kwargs.get("mongo_password"):
