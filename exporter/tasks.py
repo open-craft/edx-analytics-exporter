@@ -2,8 +2,11 @@
 
 import logging
 import os
-import subprocess
-import distutils
+import boto3
+import botocore
+import json
+from bson.json_util import dumps
+from pymongo import MongoClient
 
 from opaque_keys.edx.keys import CourseKey
 
@@ -142,7 +145,7 @@ class SQLTask(Task):
         log.debug(query)
 
         if dry_run:
-            print 'SQL: {0}'.format(query)
+            print('SQL: {0}'.format(query))
         else:
             mysql_query = MysqlDumpQueryToTSV(kwargs.get('sql_host'), kwargs.get('sql_user'), kwargs.get('sql_password'), kwargs.get('sql_db'), filename)
             mysql_query.execute(query)
@@ -168,35 +171,35 @@ class MongoTask(Task):
     NAME = NotSet
     QUERY = NotSet
     EXT = 'mongo'
-    CMD = """
-    mongoexport
-      --host {mongo_host}
-      --db {mongo_db}
-      --username {mongo_user}
-      --collection {mongo_collection}
-      --query '{query}'
-      --slaveOk
-      --out {filename}
-      >&2
-    """
+
+    @classmethod
+    def constructMongoURI(*args, **kwargs):
+        uri = "mongodb://"
+        
+        if kwargs.get("mongo_user") and kwargs.get("mongo_password"):
+            uri = f"{uri}{kwargs.get('mongo_user').strip()}:{kwargs.get('mongo_password').strip()}@"
+
+        return f"{uri}{kwargs.get('mongo_host')}/{kwargs.get('mongo_db')}"
 
     @classmethod
     def run(cls, filename, dry_run, **kwargs):
         super(MongoTask, cls).run(filename, dry_run, **kwargs)
 
+        mongo_uri = cls.constructMongoURI(**kwargs)
+
         query = clean_command(cls.QUERY).format(**kwargs)
 
         log.debug(query)
 
-        cmd = clean_command(cls.CMD)
-        cmd = cmd.format(filename=filename, query=query, **kwargs)
-
         if dry_run:
-            print 'MONGO: {0}'.format(query)
+            print('MONGO: {0}'.format(query))
         else:
-            # For some reason, if mongoexport receives EOF before a newline, it panics.  So we need to add it manually:
-            stdin_string = kwargs['mongo_password'] + "\n"
-            execute_shell(cmd, stdin_string=stdin_string, **kwargs)
+            collection = MongoClient(mongo_uri)[kwargs.get("mongo_db")][kwargs.get("mongo_collection")]
+            cursor = collection.find(json.loads(query))
+            with open(filename, 'w') as file:
+                for document in cursor:
+                    file.write(dumps(document))
+                    file.write("\n")
 
 
 class DjangoAdminTask(Task):
@@ -250,9 +253,6 @@ class CopyS3FileTask(Task):
     def run(cls, filename, dry_run, **kwargs):
         super(CopyS3FileTask, cls).run(filename, dry_run, **kwargs)
 
-        if not distutils.spawn.find_executable("aws"):
-            raise FatalTaskError("The {0} task requires the awscli".format(cls.__name__))
-
         file_basename = os.path.basename(filename)
         s3_source_filename = '{prefix}/{env}/{filename}'.format(
             prefix=kwargs['external_prefix'],
@@ -266,59 +266,54 @@ class CopyS3FileTask(Task):
         )
 
         if dry_run:
-            print 'Copy S3 File: {0} to {1}'.format(
+            print('Copy S3 File: {0} to {1}'.format(
                 s3_source_filename,
-                filename)
+                filename))
         else:
             # First check to see that the export data was successfully generated
             # by looking for a marker file for that run. Return a more severe failure,
             # so that the overall environment dump fails, rather than just the particular
             # file being copied.
 
-            head_command = "aws s3api head-object --bucket {bucket} --key {key}"
+            s3_client = boto3.client('s3')
 
-            marker_command = head_command.format(
-                bucket=kwargs['pipeline_bucket'],
-                key=s3_marker_filename
-            )
-
-            source_command = head_command.format(
-                bucket=kwargs['pipeline_bucket'],
-                key=s3_source_filename
-            )
-
-            try:
-                log.info("Running command with retries: %s.", marker_command)
-                # Define retries here, to recover from temporary outages when calling S3 to find files.
-                local_kwargs = dict(**kwargs)
-                local_kwargs['max_tries'] = MAX_TRIES_FOR_MARKER_FILE_CHECK
-                execute_shell(marker_command, **local_kwargs)
-            except subprocess.CalledProcessError:
-                error_message = 'Unable to find success marker for export {0}'.format(s3_marker_filename)
-                log.error(error_message)
-                raise FatalTaskError(error_message)
-
-            # Then check that the source file exists.  It's okay if it isn't,
-            # as that will happen when a particular database table is empty.
-            try:
-                log.info("Running command %s.", source_command)
-                execute_shell(source_command, **kwargs)
-            except subprocess.CalledProcessError:
-                log.info('Unable to find %s to copy.', s3_source_filename)
-            else:
+            for attempt in range(MAX_TRIES_FOR_MARKER_FILE_CHECK):
                 try:
-                    cmd = 'aws s3 cp s3://{bucket}/{src} {dest}'.format(
-                        bucket=kwargs['pipeline_bucket'],
-                        src=s3_source_filename,
-                        dest=filename
-                    )
-                    # Define retries here, to recover from temporary outages when calling S3 to copy files.
-                    local_kwargs = dict(**kwargs)
-                    local_kwargs['max_tries'] = MAX_TRIES_FOR_COPY_FILE_FROM_S3
-                    execute_shell(cmd, **local_kwargs)
-                except subprocess.CalledProcessError:
-                    log.error('Unable to copy %s to %s', s3_source_filename, filename)
-                    raise
+                    log.info(f"Checking if marker file {s3_marker_filename} exsists")
+                    s3_client.head_object(Bucket=kwargs['pipeline_bucket'], Key=s3_marker_filename)
+                except botocore.exceptions.ClientError as e:
+                    if (attempt + 1) < MAX_TRIES_FOR_MARKER_FILE_CHECK:
+                        continue
+                    error_code = e.response['Error']['Code']
+                    if error_code == "404":
+                        error_message = f"Unable to find success marker for export {s3_marker_filename}"
+                    else:
+                        error_message = f'Got {error_code} error while checking marker file'
+                    log.error(error_message)
+                    raise Exception(error_message) from e
+                else:
+                    break
+
+            try:
+                log.info(f"Checking if source file {s3_source_filename} exsists")
+                s3_client.head_object(Bucket=kwargs['pipeline_bucket'], Key=s3_source_filename)
+            except botocore.exceptions.ClientError as e:
+                error_message = f"Unable to find success source for export {s3_source_filename}"
+                log.info(error_message)
+                raise Exception(error_message) from e
+
+            for attempt in range(MAX_TRIES_FOR_COPY_FILE_FROM_S3):
+                try:
+                    log.info(f"Downloading source file {s3_source_filename} into {filename}")
+                    s3_client.download_file(kwargs['pipeline_bucket'], s3_source_filename, filename)
+                except Exception as e:
+                    if (attempt + 1) < MAX_TRIES_FOR_COPY_FILE_FROM_S3:
+                        continue
+                    error_message = f"Unable to copy {s3_source_filename} to {filename}"
+                    log.error(error_message)
+                    raise Exception(error_message) from e
+                else:
+                    break
 
 
 class UserIDMapTask(CourseTask, SQLTask):
