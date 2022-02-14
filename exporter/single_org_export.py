@@ -66,7 +66,12 @@ from opaque_keys.edx.keys import CourseKey
 from opaque_keys import InvalidKeyError
 
 from exporter.tasks import CourseTask, OrgTask
-from exporter.main import run_tasks, archive_directory, get_all_courses, _get_selected_tasks
+from exporter.main import (
+    run_tasks,
+    archive_directory,
+    get_all_courses,
+    _get_selected_tasks,
+)
 from exporter.single_org_config import setup, get_config_for_course
 from exporter.util import make_temp_directory, merge
 
@@ -87,10 +92,12 @@ def main():
 
         for course in courses:
             config = get_config_for_course(general_config, course)
-            course_directory = os.path.join(temp_directory, get_filename_safe_course_id(course))
+            course_directory = os.path.join(
+                temp_directory, get_filename_safe_course_id(course)
+            )
             os.mkdir(course_directory)
             export_course_data(config, course_directory)
-        
+
         root_dir = archive_directory(temp_directory)
         upload_files_or_dir(config, root_dir)
 
@@ -99,10 +106,10 @@ def export_org_data(config, courses, destination):
     """
     Run tasks to fetch org data
     """
-    kwargs = merge(config['values'], {})
-    kwargs['courses'] = courses
-    kwargs['work_dir'] = destination
-    tasks_from_options = kwargs.get('tasks', [])
+    kwargs = merge(config["values"], {})
+    kwargs["courses"] = courses
+    kwargs["work_dir"] = destination
+    tasks_from_options = kwargs.get("tasks", [])
 
     org_tasks = _get_selected_tasks(OrgTask, tasks_from_options, [])
     run_tasks(org_tasks, **kwargs)
@@ -112,8 +119,8 @@ def get_courses(config):
     """
     Fetch a list of all courses
     """
-    kwargs = merge(config['values'], {})
-    all_courses  = get_all_courses(**kwargs)
+    kwargs = merge(config["values"], {})
+    all_courses = get_all_courses(**kwargs)
 
     return all_courses
 
@@ -127,9 +134,9 @@ def archive_directory(directory):
     base_dir = os.path.basename(directory)
 
     # Fix for error when running make_archive from crontab
-    os.chdir('/tmp')
+    os.chdir("/tmp")
 
-    shutil.make_archive(directory, 'zip', root_dir, base_dir)
+    shutil.make_archive(directory, "zip", root_dir, base_dir)
     shutil.rmtree(directory)
 
     return root_dir
@@ -141,16 +148,16 @@ def export_course_data(config, destination):
     given course, except for the exculded tasks
     and store the data in local files
     """
-    log.info('Exporting data for %s', config['course'])
+    log.info("Exporting data for %s", config["course"])
 
     results = []
 
     kwargs = merge(config, {})
-    kwargs['work_dir'] = destination
+    kwargs["work_dir"] = destination
 
-    log.info("Getting data for course %s", config['course'])
-    tasks_from_options = kwargs.get('tasks', [])
-    exclude_tasks = kwargs.get('exclude_tasks', [])
+    log.info("Getting data for course %s", config["course"])
+    tasks_from_options = kwargs.get("tasks", [])
+    exclude_tasks = kwargs.get("exclude_tasks", [])
 
     course_tasks = _get_selected_tasks(CourseTask, tasks_from_options, exclude_tasks)
 
@@ -158,6 +165,7 @@ def export_course_data(config, destination):
     results.extend(filenames)
 
     return results
+
 
 def upload_files_or_dir(config, results_directory, sub_directory=None):
     """
@@ -172,7 +180,7 @@ def upload_files_or_dir(config, results_directory, sub_directory=None):
     for filename in os.listdir(parent_directory):
         filepath = os.path.join(parent_directory, filename)
 
-        if(os.path.isdir(filepath)):
+        if os.path.isdir(filepath):
             upload_files_or_dir(config, results_directory, filename)
         else:
             if sub_directory:
@@ -184,25 +192,22 @@ def upload_file(config, filepath, filename):
     """
     Upload given file to S3
     """
-    bucket = config['output_bucket']
-    prefix = config.get('output_prefix', '')
-    
-    organization = config['organization']
+    bucket = config["output_bucket"]
+    prefix = config.get("output_prefix", "")
+
+    organization = config["organization"]
     output_date = str(datetime.date.today())
 
-    s3_target = '{prefix}_{org}/{date}/{name}'.format(
-        prefix=prefix,
-        org=organization,
-        date=output_date,
-        name=filename
+    s3_target = "{prefix}_{org}/{date}/{name}".format(
+        prefix=prefix, org=organization, date=output_date, name=filename
     )
 
-    target = f's3://{bucket}/{s3_target}'
+    target = f"s3://{bucket}/{s3_target}"
 
-    log.info('Uploading file %s to %s', filepath, target)
+    log.info("Uploading file %s to %s", filepath, target)
 
-    if not config['dry_run']:
-        s3_client = boto3.client('s3')
+    if not config["dry_run"]:
+        s3_client = boto3.client("s3")
         s3_client.upload_file(filepath, bucket, s3_target)
 
 
@@ -212,31 +217,34 @@ def make_org_directory(config):
     Create a temporary directory in local
     disk to store results of tasks
     """
-    org_dir = config['values']['work_dir']
-    organization = config['values']['organization']
+    org_dir = config["values"]["work_dir"]
+    organization = config["values"]["organization"]
 
-    prefix = '{0}_'.format(organization)
+    prefix = "{0}_".format(organization)
 
     with make_temp_directory(prefix=prefix, directory=org_dir) as temp_dir:
         # create working directory
         today = str(datetime.date.today())
-        dir_name = '{name}-{date}'.format(name=organization, date=today)
+        dir_name = "{name}-{date}".format(name=organization, date=today)
         org_dir = os.path.join(temp_dir, dir_name)
         os.mkdir(org_dir)
 
         yield org_dir
 
-def get_filename_safe_course_id(course_id, replacement_char='_'):
+
+def get_filename_safe_course_id(course_id, replacement_char="_"):
     """
     Create a representation of a course_id that can be used safely in a filepath.
     """
     try:
         course_key = CourseKey.from_string(course_id)
-        filename = replacement_char.join([course_key.org, course_key.course, course_key.run])
+        filename = replacement_char.join(
+            [course_key.org, course_key.course, course_key.run]
+        )
     except InvalidKeyError:
         # If the course_id doesn't parse, we will still return a value here.
         filename = course_id
 
     # The safest characters are A-Z, a-z, 0-9, <underscore>, <period> and <hyphen>.
     # We represent the first four with \w.
-    return re.sub(r'[^\w\.\-]', replacement_char, filename)
+    return re.sub(r"[^\w\.\-]", replacement_char, filename)
