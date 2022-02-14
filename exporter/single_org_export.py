@@ -52,16 +52,21 @@ Options:
 """
 
 
-from contextlib import contextmanager
 import datetime
 import os
 import logging
 import logging.config
 import re
 import shutil
+import time
+import sys
+
+from contextlib import contextmanager
+from random import randint
 
 import boto3
 
+from botocore.exceptions import ClientError
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys import InvalidKeyError
 
@@ -84,6 +89,7 @@ def main():
     given organization and upload data to S3
     """
     general_config = setup(__doc__)
+    s3_lock_or_backoff(general_config)
 
     courses = get_courses(general_config)
 
@@ -100,6 +106,44 @@ def main():
 
         root_dir = archive_directory(temp_directory)
         upload_files_or_dir(config, root_dir)
+
+
+def s3_lock_or_backoff(config):
+    """Create a S3 lockfile so auto-scaling groups do not simultaneously run the command on
+    all the instances.
+    """
+    # Create a "jitter" so different instances start at different times
+    # This allows the first instance that wakes up to run the export while the rest can exit
+    time.sleep(randint(1, 99))
+
+    s3_client = boto3.client("s3")
+    bucket = config["output_bucket"]
+    lock_date = str(datetime.date.today())
+    prefix = config.get("output_prefix", "")
+    org = config["organization"]
+    # limit length - if all tasks are run, this will be too long
+    name = "_".join(config["tasks"])[:32] + "_LOCK"
+    lock_file_key = f"{prefix}_{org}/{lock_date}/{name}"
+
+    if config["dry_run"]:
+        log.info("Skipping S3 lockfile check because of --dry-run")
+        return
+
+    try:
+        s3_client.head_object(Bucket=bucket, Key=lock_file_key)
+        log.info(f"S3 Lockfile {lock_file_key} already exists. Exiting.")
+        sys.exit(0)
+    except ClientError as e:
+        if e.response["ResponseMetadata"]["HTTPStatusCode"] == 404:
+            log.info("Creating Lockfile %s", f"s3://{bucket}/{lock_file_key}")
+            s3_client.put_object(
+                Body=b"LOCKED",
+                ACL="authenticated-read",
+                Bucket=bucket,
+                Key=lock_file_key,
+            )
+        else:
+            raise e
 
 
 def export_org_data(config, courses, destination):
