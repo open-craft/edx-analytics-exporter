@@ -5,6 +5,7 @@ import os
 import boto3
 import botocore
 import json
+
 from bson.json_util import dumps
 from pymongo import MongoClient
 
@@ -66,7 +67,7 @@ class FilenameMixin(object):
             task=cls.NAME,
             name=kwargs['name'],
             extension=cls.EXT
-        )
+        ).strip(".")
 
     @classmethod
     def get_filename(cls, **kwargs):
@@ -995,6 +996,24 @@ class CourseContentTask(CourseTask, DjangoAdminTask):
     > {output}
     """
 
+class CourseExportTask(CourseTask, DjangoAdminTask):
+    NAME = "course_export"
+    EXT = ""
+    COMMAND = "export"
+    ARGS = "{course}"
+    OUT = "{filename}"
+    VARS = "STUDIO_CFG={studio_config}"
+    CMD = """
+    {variables}
+      mkdir -p {output} &&
+      {django_admin} {command}
+      --settings={django_cms_settings}
+      --pythonpath={django_pythonpath}
+      {arguments} {output} &&
+      tar -zcf {output}.tar.gz -C {output} . &&
+      rm -rf {output}
+    """
+
 
 class OrgEmailOptInTask(OrgTask, DjangoAdminTask):
     NAME = 'email_opt_in'
@@ -1038,6 +1057,7 @@ DEFAULT_TASKS = [
     ForumsTask,
     CourseStructureTask,
     CourseContentTask,
+    CourseExportTask,
     CourseRoleTask,
     ForumRoleTask,
     OrgEmailOptInTask,
