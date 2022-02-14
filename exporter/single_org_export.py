@@ -73,7 +73,6 @@ from opaque_keys import InvalidKeyError
 from exporter.tasks import CourseTask, OrgTask
 from exporter.main import (
     run_tasks,
-    archive_directory,
     get_all_courses,
     _get_selected_tasks,
 )
@@ -89,7 +88,7 @@ def main():
     given organization and upload data to S3
     """
     general_config = setup(__doc__)
-    s3_lock_or_backoff(general_config)
+    s3_lock_or_backoff(general_config["values"])
 
     courses = get_courses(general_config)
 
@@ -105,7 +104,7 @@ def main():
             export_course_data(config, course_directory)
 
         root_dir = archive_directory(temp_directory)
-        upload_files_or_dir(config, root_dir)
+        upload_files_or_dir(general_config["values"], root_dir)
 
 
 def s3_lock_or_backoff(config):
